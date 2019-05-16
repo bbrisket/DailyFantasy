@@ -1,39 +1,68 @@
 import pandas as pd
 
-#input: DataFrame containing player name, position, value, salary
-#assume that players.keys() == salaries.keys()
-def knapsack(playerinfo, positionDict, cap):
+def buildLineup(playerInfo, positionDict, cap):
     '''
-    playerinfo: Pandas DataFrame containing player name, position, value, Salary
+    playerInfo: Pandas DataFrame containing player name, position, value, Salary
     positionDict: Dictionary with keys representing each position needed and
         values representing the number of players from those positions required
     cap: Integer representing salary cap
 
-    knapsack() returns a list of player names, representing the lineup of
+    buildLineup() returns a list of player names, representing the lineup of
     maximum value that fulfills the position requirement and stays below the
     salary cap.
-    '''
-    for position in positionDict:
-        continue
-    return 0
 
-def describeLineup(playerinfo, lineup):
+    Current algorithm: Create basic roster consisting of players requiring
+    minimum salary. Then gradually replace least efficient player within the
+    lineup with the most efficient available player within the same position.
+    '''
+    lineup = []
+    cost = 0
+
+    foundPositionDict = {}
+    cheapPlayerInfo = playerInfo.sort_values("Salary") #sort by cheapest player
+
+    for row in range(len(cheapPlayerInfo)): #build basic lineup
+        pos = cheapPlayerInfo.iloc[row]["Position"]
+        salary = cheapPlayerInfo.iloc[row]["Salary"]
+        name = cheapPlayerInfo.index[row]
+        if pos in positionDict: #assuming values of positionDict are POSITIVE
+            if pos not in foundPositionDict:
+                foundPositionDict[pos] = 1
+                cost += salary
+                lineup.append(name)
+            elif foundPositionDict[pos] < positionDict[pos]:
+                foundPositionDict[pos] += 1
+                cost += salary
+                lineup.append(name)
+
+    playerInfo["Efficiency"] = pd.to_numeric(playerInfo["Value"])/pd.to_numeric(playerInfo["Salary"])
+    efficientPlayerInfo = playerInfo.sort_values("Efficiency", ascending=False)
+    lineup.sort(key = lambda x: playerInfo.loc[x]["Efficiency"]) #sort by increasing efficiency
+
+    for index in range(len(lineup)): #replace least efficient players first
+        continue #playerInfo[playerInfo["Position"] == playerInfo.loc[lineup[index]]["position"]]
+
+    print(efficientPlayerInfo)
+    return lineup
+
+def describeLineup(playerInfo, lineup):
     totalValue = 0
     totalSalary = 0
-    for player in lineup:
-        totalValue += int(playerinfo.loc[player]["Value"])
-        totalSalary += int(playerinfo.loc[player]["Salary"])
+    for name in lineup:
+        totalValue += int(playerInfo.loc[name]["Value"])
+        totalSalary += int(playerInfo.loc[name]["Salary"])
     print("This lineup has value index {} and requires a salary of ${}.".format(totalValue, totalSalary))
 
 def main():
-    playerinfo = pd.read_csv("playerinfo.csv")
-    playerinfo.set_index("Name", inplace=True)
-    print(playerinfo)
+    playerInfo = pd.read_csv("playerinfo.csv")
+    playerInfo.set_index("Name", inplace=True)
 
     cap = 20000
-    #lineup = knapsack(playerinfo, cap)
-    lineup = ["Bob", "Carol", "Eunice"]
-    describeLineup(playerinfo, lineup)
+    positionDict = {"QB":1, "TE":1, "WR":2}
+    lineup = buildLineup(playerInfo, positionDict, cap)
+
+    print(lineup, "\n")
+    describeLineup(playerInfo, lineup)
 
 if __name__ == '__main__':
     main()
