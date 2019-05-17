@@ -16,33 +16,52 @@ def buildLineup(playerInfo, positionDict, cap):
     lineup with the most efficient available player within the same position.
     '''
     lineup = []
-    cost = 0
+    netCost = 0
+    netValue = 0
 
     foundPositionDict = {}
     cheapPlayerInfo = playerInfo.sort_values("Salary") #sort by cheapest player
 
-    for row in range(len(cheapPlayerInfo)): #build basic lineup
-        pos = cheapPlayerInfo.iloc[row]["Position"]
-        salary = cheapPlayerInfo.iloc[row]["Salary"]
-        name = cheapPlayerInfo.index[row]
+    for i in range(len(cheapPlayerInfo)): #build basic lineup
+        pos = cheapPlayerInfo.iloc[i]["Position"]
+        salary = cheapPlayerInfo.iloc[i]["Salary"]
+        value = cheapPlayerInfo.iloc[i]["Value"]
+        name = cheapPlayerInfo.index[i]
         if pos in positionDict: #assuming values of positionDict are POSITIVE
             if pos not in foundPositionDict:
                 foundPositionDict[pos] = 1
-                cost += salary
+                netCost += salary
+                netValue += value
                 lineup.append(name)
             elif foundPositionDict[pos] < positionDict[pos]:
                 foundPositionDict[pos] += 1
-                cost += salary
+                netCost += salary
+                netValue += value
                 lineup.append(name)
+
+    if netCost > cap: #sanity check
+        print("Error: total cost of cheapest possible lineup exceeds salary cap.")
+        return None
 
     playerInfo["Efficiency"] = pd.to_numeric(playerInfo["Value"])/pd.to_numeric(playerInfo["Salary"])
     efficientPlayerInfo = playerInfo.sort_values("Efficiency", ascending=False)
     lineup.sort(key = lambda x: playerInfo.loc[x]["Efficiency"]) #sort by increasing efficiency
-
-    for index in range(len(lineup)): #replace least efficient players first
-        continue #playerInfo[playerInfo["Position"] == playerInfo.loc[lineup[index]]["position"]]
-
     print(efficientPlayerInfo)
+
+    for i in range(len(lineup)): #replace least efficient players first
+        pos = playerInfo.loc[lineup[i]]["Position"]
+        salary = playerInfo.loc[lineup[i]]["Salary"]
+        value = playerInfo.loc[lineup[i]]["Value"]
+        posPool = playerInfo[playerInfo["Position"] == pos].sort_values("Efficiency", ascending=False)
+        for j in range(len(posPool)):
+            name = posPool.index[j]
+            newCost = netCost - salary + playerInfo.loc[name]["Salary"]
+            newValue = netValue - value + playerInfo.loc[name]["Value"]
+            if name not in lineup and newValue > netValue and newCost <= cap: #update player
+                lineup[i] = name
+                netCost = newCost
+                netValue = newValue
+
     return lineup
 
 def describeLineup(playerInfo, lineup):
