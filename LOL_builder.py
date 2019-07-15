@@ -6,12 +6,21 @@ import requests
 def getPlayerStatsURL(player_name):
     return "https://lol.gamepedia.com/Special:RunQuery/TournamentStatistics?TS%5Bpreload%5D=PlayerByChampion&TS%5Btournament%5D=LCS%202019%20Summer&TS%5Blink%5D=" + player_name + "&pfRunQueryFormName=TournamentStatistics"
 
-def describePlayer(player_stats):
+def analyze_player(player_stats, recency_bias):
 ```
-playerStats (df): contains fantasy points per week
+player_stats (df): contains fantasy points per week
+recency_bias (double): value describing the weight to assign to more recent performances,
+    between 0 (least) to 1 (most) 
 
 ```
-    return
+    numWeeks = 1
+    points = [player_stats.iloc(i)[pts] for i in range(numWeeks)]
+
+    skewed_avg = 0; #bias toward more recent performances
+    avg = sum(points)/len(points);
+    std = np.std(points);
+
+    return skewed_avg, avg, std;
 
 def main():
     doublelift_URL = getPlayerStatsURL("doublelift")

@@ -1,13 +1,13 @@
 import pandas as pd
 
-def buildLineup(player_info, position_dict, cap):
+def build_lineup(player_info, position_dict, cap):
     '''
-    playerInfo: Pandas DataFrame containing player name, position, value, salary
+    player_info: Pandas DataFrame containing player name, position, value, salary
     positionDict: Dictionary with keys representing each position needed and
         values representing the number of players from those positions required
     cap: Integer representing salary cap
 
-    buildLineup() returns a list of player names, representing the lineup of
+    build_lineup() returns a list of player names, representing the lineup of
     maximum value that fulfills the position requirement and stays below the
     salary cap.
 
@@ -20,7 +20,7 @@ def buildLineup(player_info, position_dict, cap):
     net_value = 0
 
     found_position_dict = {}
-    cheap_player_info = playerInfo.sort_values("Salary") #sort by cheapest player
+    cheap_player_info = player_info.sort_values("Salary") #sort by cheapest player
 
     for i in range(len(cheap_player_info)): #build basic lineup
         pos = cheap_player_info.iloc[i]["Position"]
@@ -64,7 +64,7 @@ def buildLineup(player_info, position_dict, cap):
 
     return lineup
 
-def describeLineup(player_info, lineup):
+def describe_lineup(player_info, lineup):
     total_value = 0
     total_salary = 0
     for name in lineup:
@@ -78,10 +78,10 @@ def main():
 
     cap = 20000
     position_dict = {"QB":1, "TE":1, "WR":2} #positional requirements
-    lineup = buildLineup(player_info, position_dict, cap)
+    lineup = build_lineup(player_info, position_dict, cap)
 
     print(lineup, "\n")
-    describeLineup(player_info, lineup)
+    describe_lineup(player_info, lineup)
 
 if __name__ == '__main__':
     main()
