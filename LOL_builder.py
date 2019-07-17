@@ -22,6 +22,8 @@ recency_bias (double): value describing the weight to assign to more recent perf
     for i in range(numWeeks):
         skewed_avg += points[i]/(i+1)
 
+    skewed_avg *= sum(1/(i+1) for i in range(numWeeks))
+
     std = np.std(points)
 
     return avg, skewed_avg, std
