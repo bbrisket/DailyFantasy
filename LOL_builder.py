@@ -16,11 +16,15 @@ recency_bias (double): value describing the weight to assign to more recent perf
     numWeeks = 1
     points = [player_stats.iloc(i)[pts] for i in range(numWeeks)]
 
-    skewed_avg = 0; #bias toward more recent performances
-    avg = sum(points)/len(points);
-    std = np.std(points);
+    avg = sum(points)/len(points)
 
-    return skewed_avg, avg, std;
+    skewed_avg = 0 #bias toward more recent performances
+    for i in range(numWeeks):
+        skewed_avg += points[i]/(i+1)
+
+    std = np.std(points)
+
+    return avg, skewed_avg, std
 
 def main():
     doublelift_URL = getPlayerStatsURL("doublelift")
