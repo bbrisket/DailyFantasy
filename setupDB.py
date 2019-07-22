@@ -6,9 +6,10 @@ def main():
     c = conn.cursor()
 
     c.execute('''CREATE TABLE IF NOT EXISTS CONTESTS
-                ([Name] text, [Prize Pool] float, [Buy In] float, [Top Prize] integer,
-                    [Max Entries] integer, [Entries] integer, [Cash Line] float,
-                    [Winner] text, [Winning Score] float, [Week] text)''')
+                ([Name] text, [Link] text, [Prize Pool] float, [Buy In] float,
+                    [Top Prize] integer, [Max Entries] integer, [Entries] integer,
+                    [Cash Line] float, [Winner] text, [Winning Score] float,
+                    [Week] text)''')
 
     contest_df = pd.DataFrame()
 
@@ -20,7 +21,7 @@ def main():
     contest_df = pd.concat([contest_df, temp_df])
     contest_df = contest_df.dropna() #get rid of contests with missing data
 
-    sql_contest_df = pd.DataFrame.to_sql('CONTESTS', conn, if_exists='append', index = False)
+    contest_df.to_sql(name='CONTESTS', con=conn, if_exists='append', index = False)
 
     return 0
 
