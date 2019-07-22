@@ -1,9 +1,10 @@
 import pandas as pd
 import sqlite3
-from sqlalchemy import create_engine
 
 def main():
-    engine = create_engine("sqlite:///dfs.db")
+    #engine = create_engine("sqlite:///dfs.db")
+    conn = sqlite3.connect("dfs.db")
+    c = conn.cursor()
 
     contest_df = pd.DataFrame()
 
@@ -15,13 +16,16 @@ def main():
     contest_df = pd.concat([contest_df, temp_df])
     contest_df = contest_df.dropna() #get rid of contests with missing data
 
-    contest_df.to_sql(name='CONTESTS', con=engine, if_exists='append', index = False)
+    contest_df.to_sql(name='CONTESTS', con=conn, if_exists='replace', index = False)
 
-#    engine.execute('''CREATE TABLE CONTESTS
+#    c.execute('''CREATE TABLE CONTESTS
 #            ([Name] text, [Link] text, [Prize Pool] float, [Buy In] float,
 #                [Top Prize] integer, [Max Entries] integer, [Entries] integer,
 #                [Cash Line] float, [Winner] text, [Winning Score] float,
 #                [Week] text)''')
+
+    contest_names = c.execute("SELECT Name FROM CONTESTS WHERE Name LIKE '%Double%'")
+    print(contest_names.fetchall())
 
     return 0
 
