@@ -12,10 +12,9 @@ def main():
         week = "Week " + str(i)
         temp_df = pd.read_excel("DK_NFL_contest_data_2018.xlsx", sheet_name=week)
         temp_df["Week"] = week
+        contest_df = pd.concat([contest_df, temp_df])
 
-    contest_df = pd.concat([contest_df, temp_df])
     contest_df = contest_df.dropna() #get rid of contests with missing data
-
     contest_df.to_sql(name='CONTESTS', con=conn, if_exists='replace', index = False)
 
 #    c.execute('''CREATE TABLE CONTESTS
