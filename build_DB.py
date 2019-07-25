@@ -5,11 +5,15 @@ from bs4 import BeautifulSoup
 import requests
 
 def get_stats_URL(
-    year_min=2018, year_max=2018, team_id="", opp_id="", week_num_min=1, week_num_max=1,
-    game_location="", stat_type = "pass_att"
+    year = 2018, team_id = "", opp_id = "", week_num = 1,
+    game_location = "", stat_type = "pass_att"
 ):
-    if stat_type not in ["pass_att", "rush_att", "rec"]:
-        print("Invalid argument for stat_type; must be in [\"pass_att\", \"rush_att\", \"rec\"]")
+    '''
+    Note: URL retrieves stats for only a single week at a time to account for PFR's
+        limit of 100 results per page.
+    '''
+    if stat_type not in ["pass_att", "rush_att", "rec", "tackles_solo"]:
+        print("stat_type must be in [\"pass_att\", \"rush_att\", \"rec\", \"tackles_solo\"]")
 
     url = ("https://www.pro-football-reference.com/play-index/pgl_finder.cgi?request=1&match=game&" +
             "year_min={}&" +
@@ -35,9 +39,9 @@ def get_stats_URL(
             "c1stat={}&" +
             "c1comp=gt&c1val=1&c2stat=&c2comp=gt&c2val=&c3stat=&c3comp=gt&c3val=&c4stat=&c4comp=gt&c4val=&" +
             "order_by=player&" +
-            "from_link=1").format(year_min, year_max, team_id, opp_id, week_num_min, week_num_max,
+            "from_link=1").format(year, year, team_id, opp_id, week_num, week_num,
                                   game_location, stat_type)
-
+    print(url, "\n")
     return url
 
 def stats_to_df(url):
@@ -87,7 +91,7 @@ def main():
     '''
     ### Get player info
 
-    url = get_stats_URL(team_id = "PHI", week_num_min = 1, week_num_max = 5, stat_type = "rush_att");
+    url = get_stats_URL(team_id = "PHI", week_num = 15, stat_type = "tackles_solo");
     data = stats_to_df(url);
 
 
