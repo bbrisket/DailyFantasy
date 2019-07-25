@@ -10,13 +10,45 @@ import requests
 #                [Cash Line] float, [Winner] text, [Winning Score] float,
 #                [Week] text)''')
 
-def fetch_NFL_stats():
-    return 0
+def get_stats_URL(
+    year_min=2018, year_max=2018, team_id="", opp_id="", week_num_min=1, week_num_max=1,
+    game_location="", stat_type = "pass_att"
+):
+    if stat_type not in ["pass_att", "rush_att", "rec"]:
+        print("Invalid argument for stat_type; must be in [\"pass_att\", \"rush_att\", \"rec\"]")
 
+    url = ("https://www.pro-football-reference.com/play-index/pgl_finder.cgi?request=1&match=game&" +
+            "year_min={}&" +
+            "year_max={}&" +
+            "season_start=1&" +
+            "season_end=-1&" +
+            "age_min=0&" +
+            "age_max=99&" +
+            "game_type=A&" +
+            "league_id=&" +
+            "team_id={}&" +
+            "opp_id={}&" +
+            "game_num_min=0&" +
+            "game_num_max=99&" +
+            "week_num_min={}&" +
+            "week_num_max={}&" +
+            "game_day_of_week=&" +
+            "game_location={}&" +
+            "game_result=&" +
+            "handedness=&" +
+            "is_active=&" +
+            "is_hof=&" +
+            "c1stat={}&" +
+            "c1comp=gt&c1val=1&c2stat=&c2comp=gt&c2val=&c3stat=&c3comp=gt&c3val=&c4stat=&c4comp=gt&c4val=&" +
+            "order_by=player&" +
+            "from_link=1").format(year_min, year_max, team_id, opp_id, week_num_min, week_num_max,
+                                  game_location, stat_type)
+
+    return url
 
 def main():
     ### Get contest info
-
+    '''
     conn = sqlite3.connect("dfs.db")
     c = conn.cursor()
 
@@ -33,10 +65,10 @@ def main():
 
     contest_names = c.execute("SELECT Name, [Winning Score] FROM CONTESTS WHERE Name LIKE '%Double%'")
     print(contest_names.fetchall())
-
+    '''
     ### Get player info
 
-    url = "https://www.pro-football-reference.com/play-index/pgl_finder.cgi?request=1&match=game&year_min=2018&year_max=2018&season_start=1&season_end=-1&age_min=0&age_max=99&game_type=A&league_id=&team_id=&opp_id=&game_num_min=0&game_num_max=99&week_num_min=1&week_num_max=1&game_day_of_week=&game_location=&game_result=&handedness=&is_active=&is_hof=&c1stat=pass_att&c1comp=gt&c1val=1&c2stat=&c2comp=gt&c2val=&c3stat=&c3comp=gt&c3val=&c4stat=&c4comp=gt&c4val=&order_by=pass_rating&from_link=1"
+    url = get_stats_URL(team_id = "PHI", week_num_min = 1, week_num_max = 5, stat_type = "rush_att");
     page = requests.get(url);
     soup = BeautifulSoup(page.content, 'lxml')
     table = soup.find('table')
@@ -58,6 +90,7 @@ def main():
         text = [col.get_text() for col in cols if col] #list of stats for each player
         data = data.append(pd.DataFrame([text], columns = colnames))
 
+    data = data.dropna()
     print(data)
 
 if __name__ == '__main__':
