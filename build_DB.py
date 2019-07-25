@@ -4,12 +4,6 @@ import sqlite3
 from bs4 import BeautifulSoup
 import requests
 
-#    c.execute('''CREATE TABLE CONTESTS
-#            ([Name] text, [Link] text, [Prize Pool] float, [Buy In] float,
-#                [Top Prize] integer, [Max Entries] integer, [Entries] integer,
-#                [Cash Line] float, [Winner] text, [Winning Score] float,
-#                [Week] text)''')
-
 def get_stats_URL(
     year_min=2018, year_max=2018, team_id="", opp_id="", week_num_min=1, week_num_max=1,
     game_location="", stat_type = "pass_att"
@@ -46,6 +40,31 @@ def get_stats_URL(
 
     return url
 
+def stats_to_df(url):
+    page = requests.get(url);
+    soup = BeautifulSoup(page.content, 'lxml')
+    table = soup.find('table')
+
+    first_flag = True
+    rows = table.findAll('tr')
+    for row in rows:
+        cols = row.findAll('td')
+
+        if not cols:
+            continue
+
+        if first_flag:  #extract column names from the table's first row; PFF table headers are unhelpful
+            colnames = [col['data-stat'] for col in cols]
+            data = pd.DataFrame(columns = colnames)
+            first_flag = False
+
+        text = [col.get_text() for col in cols if col] #list of stats for each player
+        data = data.append(pd.DataFrame([text], columns = colnames))
+
+    data = data.dropna()
+    print(data)
+    return data
+
 def main():
     ### Get contest info
     '''
@@ -69,29 +88,8 @@ def main():
     ### Get player info
 
     url = get_stats_URL(team_id = "PHI", week_num_min = 1, week_num_max = 5, stat_type = "rush_att");
-    page = requests.get(url);
-    soup = BeautifulSoup(page.content, 'lxml')
-    table = soup.find('table')
+    data = stats_to_df(url);
 
-    rows = table.findAll('tr')
-    first_flag = True
-
-    for row in rows:
-        cols = row.findAll('td')
-
-        if not cols:
-            continue
-
-        if first_flag:
-            colnames = [col['data-stat'] for col in cols]
-            data = pd.DataFrame(columns = colnames)
-            first_flag = False
-
-        text = [col.get_text() for col in cols if col] #list of stats for each player
-        data = data.append(pd.DataFrame([text], columns = colnames))
-
-    data = data.dropna()
-    print(data)
 
 if __name__ == '__main__':
     main()
