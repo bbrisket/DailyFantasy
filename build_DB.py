@@ -69,10 +69,16 @@ def stats_to_df(url):
     data = data.dropna()
     return data
 
+def clear_db_tables(con, table_names):
+    for table in table_names:
+        con.execute("DROP TABLE IF EXISTS {}".format(table))
+
 def main():
     ### Set up database
     engine = db.create_engine('sqlite:///dfs.db')
     conn = engine.connect()
+    clear_db_tables(conn, ["NFL_CONTESTS", "NFL_STATS_PASS", "NFL_STATS_RUSH",
+                           "NFL_STATS_REC", "NFL_STATS_DEF"])
 
     ### Get contest info
     contest_df = pd.DataFrame()
@@ -96,9 +102,12 @@ def main():
         rec_data = stats_to_df(get_stats_URL(week_num = i, stat_type = "rec"));
         rec_data.to_sql(name='NFL_STATS_REC', con=conn, if_exists='append', index = False)
 
+        def_data = stats_to_df(get_stats_URL(week_num = i, stat_type = "tackles_solo"));
+        def_data.to_sql(name='NFL_STATS_DEF', con=conn, if_exists='append', index = False)
+
     ### Examine data
-    playernames = conn.execute("SELECT player FROM NFL_STATS_PASS")
-    print(playernames.fetchall()[0:10])
+    playernames = conn.execute("SELECT player, team FROM NFL_STATS_DEF")
+    print(playernames.fetchall()[0:100])
 
 
 if __name__ == '__main__':
