@@ -5,6 +5,11 @@ import sqlalchemy as db
 from bs4 import BeautifulSoup
 import requests
 
+teams = ['ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE',
+         'DAL', 'DEN', 'DET', 'GNB', 'HOU', 'IND', 'JAX', 'KAN',
+         'LAC', 'LAR', 'MIA', 'MIN', 'NOR', 'NWE', 'NGY', 'NYJ',
+         'OAK', 'PHI', 'PIT', 'SEA', 'SFO', 'TAM', 'TEN', 'WAS']
+
 def get_stats_URL(
     year = 2018, team_id = "", opp_id = "", week_num = 1,
     game_location = "", stat_type = "pass_att"
@@ -108,6 +113,8 @@ def main():
     ### Examine data
     playernames = conn.execute("SELECT player, team FROM NFL_STATS_DEF")
     print(playernames.fetchall()[0:100])
+
+    conn.close()
 
 
 if __name__ == '__main__':
