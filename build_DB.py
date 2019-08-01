@@ -10,6 +10,9 @@ teams = ['ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE',
          'LAC', 'LAR', 'MIA', 'MIN', 'NOR', 'NWE', 'NGY', 'NYJ',
          'OAK', 'PHI', 'PIT', 'SEA', 'SFO', 'TAM', 'TEN', 'WAS']
 
+table_names = ["NFL_CONTESTS", "NFL_STATS_PASS", "NFL_STATS_RUSH",
+               "NFL_STATS_REC", "NFL_STATS_DEF"]
+
 def get_stats_URL(
     year = 2018, team_id = "", opp_id = "", week_num = 1,
     game_location = "", stat_type = "pass_att"
@@ -82,37 +85,36 @@ def main():
     ### Set up database
     engine = db.create_engine('sqlite:///dfs.db')
     conn = engine.connect()
-    clear_db_tables(conn, ["NFL_CONTESTS", "NFL_STATS_PASS", "NFL_STATS_RUSH",
-                           "NFL_STATS_REC", "NFL_STATS_DEF"])
+    clear_db_tables(conn, table_names)
 
     ### Get contest info
     contest_df = pd.DataFrame()
-    for i in range(1, 17):
+    for i in range(1, 18):
         week = "Week " + str(i)
         temp_df = pd.read_excel("DK_NFL_contest_data_2018.xlsx", sheet_name=week)
         temp_df["Week"] = week
         contest_df = pd.concat([contest_df, temp_df])
 
     contest_df = contest_df.dropna() #get rid of contests with missing data
-    contest_df.to_sql(name='NFL_CONTESTS', con=conn, if_exists='replace', index = False)
+    contest_df.to_sql(name = 'NFL_CONTESTS', con = conn, if_exists = 'replace', index = False)
 
     ### Get player info
-    for i in range(1, 17):
+    for i in range(1, 18):
         pass_data = stats_to_df(get_stats_URL(week_num = i, stat_type = "pass_att"));
-        pass_data.to_sql(name='NFL_STATS_PASS', con=conn,if_exists='append', index = False)
+        pass_data.to_sql(name = 'NFL_STATS_PASS', con = conn, if_exists = 'append', index = False)
 
         rush_data = stats_to_df(get_stats_URL(week_num = i, stat_type = "rush_att"));
-        rush_data.to_sql(name='NFL_STATS_RUSH', con=conn, if_exists='append', index = False)
+        rush_data.to_sql(name = 'NFL_STATS_RUSH', con = conn, if_exists = 'append', index = False)
 
         rec_data = stats_to_df(get_stats_URL(week_num = i, stat_type = "rec"));
-        rec_data.to_sql(name='NFL_STATS_REC', con=conn, if_exists='append', index = False)
+        rec_data.to_sql(name = 'NFL_STATS_REC', con = conn, if_exists = 'append', index = False)
 
         def_data = stats_to_df(get_stats_URL(week_num = i, stat_type = "tackles_solo"));
-        def_data.to_sql(name='NFL_STATS_DEF', con=conn, if_exists='append', index = False)
+        def_data.to_sql(name = 'NFL_STATS_DEF', con = conn, if_exists = 'append', index = False)
 
     ### Examine data
-    playernames = conn.execute("SELECT player, team FROM NFL_STATS_DEF")
-    print(playernames.fetchall()[0:100])
+    #playernames = conn.execute("SELECT player, team FROM NFL_STATS_DEF")
+    #print(playernames.fetchall()[0:100])
 
     conn.close()
 
