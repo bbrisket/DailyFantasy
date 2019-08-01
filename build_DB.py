@@ -5,7 +5,7 @@ import sqlalchemy as db
 from bs4 import BeautifulSoup
 import requests
 
-teams = ['ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE',
+team_names = ['ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE',
          'DAL', 'DEN', 'DET', 'GNB', 'HOU', 'IND', 'JAX', 'KAN',
          'LAC', 'LAR', 'MIA', 'MIN', 'NOR', 'NWE', 'NGY', 'NYJ',
          'OAK', 'PHI', 'PIT', 'SEA', 'SFO', 'TAM', 'TEN', 'WAS']
@@ -50,7 +50,7 @@ def get_stats_URL(
             "order_by=player&" +
             "from_link=1").format(year, year, team_id, opp_id, week_num, week_num,
                                   game_location, stat_type)
-    print(year, week_num, stat_type, sep=" - ", end="\n")
+    print(year, week_num, team_id, stat_type, sep=" - ", end="\n")
     return url
 
 def stats_to_df(url):
@@ -58,8 +58,12 @@ def stats_to_df(url):
     soup = BeautifulSoup(page.content, 'lxml')
     table = soup.find('table')
 
+    if table is None:
+        return None
+
     first_flag = True
     rows = table.findAll('tr')
+    data = None
     for row in rows:
         cols = row.findAll('td')
 
@@ -72,14 +76,31 @@ def stats_to_df(url):
             first_flag = False
 
         text = [col.get_text() for col in cols if col] #list of stats for each player
-        data = data.append(pd.DataFrame([text], columns = colnames))
+        df = pd.DataFrame([text], columns = colnames)
 
-    data = data.dropna()
+        if data is None:
+            data = df
+        else:
+            data = data.append(df)
+    '''
+    try:
+        data
+    except NameError:
+        data = None
+    else:
+        data = data.dropna()
+    '''
+
     return data
 
 def clear_db_tables(con, table_names):
     for table in table_names:
         con.execute("DROP TABLE IF EXISTS {}".format(table))
+
+def add_NFL_stats(con, table_name, team_id, week_num, stat_type):
+    data = stats_to_df(get_stats_URL(team_id = team_id, week_num = week_num, stat_type = stat_type))
+    if data is not None:
+        data.to_sql(name = table_name, con = con, if_exists = 'append', index = False)
 
 def main():
     ### Set up database
@@ -100,18 +121,25 @@ def main():
 
     ### Get player info
     for i in range(1, 18):
-        pass_data = stats_to_df(get_stats_URL(week_num = i, stat_type = "pass_att"));
-        pass_data.to_sql(name = 'NFL_STATS_PASS', con = conn, if_exists = 'append', index = False)
+        for team in team_names:
+            add_NFL_stats(conn, "NFL_STATS_PASS", team, i, "pass_att")
+            add_NFL_stats(conn, "NFL_STATS_RUSH", team, i, "rush_att")
+            add_NFL_stats(conn, "NFL_STATS_REC", team, i, "rec")
+            add_NFL_stats(conn, "NFL_STATS_DEF", team, i, "tackles_solo")
 
-        rush_data = stats_to_df(get_stats_URL(week_num = i, stat_type = "rush_att"));
-        rush_data.to_sql(name = 'NFL_STATS_RUSH', con = conn, if_exists = 'append', index = False)
+    '''
+            pass_data = stats_to_df(get_stats_URL(team_id = team, week_num = i, stat_type = "pass_att"));
+            pass_data.to_sql(name = 'NFL_STATS_PASS', con = conn, if_exists = 'append', index = False)
 
-        rec_data = stats_to_df(get_stats_URL(week_num = i, stat_type = "rec"));
-        rec_data.to_sql(name = 'NFL_STATS_REC', con = conn, if_exists = 'append', index = False)
+            rush_data = stats_to_df(get_stats_URL(team_id = team, week_num = i, stat_type = "rush_att"));
+            rush_data.to_sql(name = 'NFL_STATS_RUSH', con = conn, if_exists = 'append', index = False)
 
-        def_data = stats_to_df(get_stats_URL(week_num = i, stat_type = "tackles_solo"));
-        def_data.to_sql(name = 'NFL_STATS_DEF', con = conn, if_exists = 'append', index = False)
+            rec_data = stats_to_df(get_stats_URL(team_id = team, week_num = i, stat_type = "rec"));
+            rec_data.to_sql(name = 'NFL_STATS_REC', con = conn, if_exists = 'append', index = False)
 
+            def_data = stats_to_df(get_stats_URL(team_id = team, week_num = i, stat_type = "tackles_solo"));
+            def_data.to_sql(name = 'NFL_STATS_DEF', con = conn, if_exists = 'append', index = False)
+    '''
     ### Examine data
     #playernames = conn.execute("SELECT player, team FROM NFL_STATS_DEF")
     #print(playernames.fetchall()[0:100])
