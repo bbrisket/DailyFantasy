@@ -1,7 +1,7 @@
 # DailyFantasy
 A project to build optimal lineups for daily fantasy purposes.
 
-Stats were pulled from rotogrinder and Pro Football Reference.
+Data was pulled from rotogrinder (DraftKings contest stats), rotoguru (DraftKings salaries), and Pro Football Reference (NFL stats).
 
 [COMPLETE]
 * build_DB.py - Sets up an SQL database (dfs.db) for storing contest data and player data
@@ -12,6 +12,7 @@ Stats were pulled from rotogrinder and Pro Football Reference.
 	* NFL_STATS_RUSH - has columns: 'player', 'pos', 'age', 'game_date', 'league_id', 'team', 'game_location', 'opp', 'game_result', 'game_num', 'week_num', 'game_day_of_week', 'rush_att', 'rush_yds', 'rush_yds_per_att', 'rush_td'
 	* NFL_STATS_REC - has columns: 'player', 'pos', 'age', 'game_date', 'league_id', 'team', 'game_location', 'opp', 'game_result', 'game_num', 'week_num', 'game_day_of_week', 'targets', 'rec', 'rec_yds', 'rec_yds_per_rec', 'rec_td', 'catch_pct', 'rec_yds_per_tgt'
 	* NFL_STATS_DEF - has columns: 'player', 'pos', 'age', 'game_date', 'league_id', 'team', 'game_location', 'opp', 'game_result', 'game_num', 'week_num', 'game_day_of_week', 'sacks', 'tackles_solo', 'tackles_assists', 'tackles_combined', 'tackles_loss', 'qb_hits'
+	* NFL_SALARIES - has columns: 'Week', 'Year', 'GID', 'Name', 'Pos', 'Team', 'h/a', 'Oppt', 'DK points', 'DK salary'
 
 [FUNCTIONAL/IN PROGRESS]
 * contest_analysis.ipynb - Contains visualizations and explorations of contest data
