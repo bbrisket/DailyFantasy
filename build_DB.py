@@ -104,7 +104,7 @@ def add_NFL_stats(con, table_name, team_id, week_num, stat_type):
 
 def main():
     ### Set up database
-    engine = db.create_engine('sqlite:///dfs.db')
+    engine = db.create_engine('sqlite://data/dfs.db')
     conn = engine.connect()
     clear_db_tables(conn, table_names)
 
@@ -112,7 +112,7 @@ def main():
     contest_df = pd.DataFrame()
     for i in range(1, 18):
         week = "Week " + str(i)
-        temp_df = pd.read_excel("DK_NFL_contest_data_2018.xlsx", sheet_name=week)
+        temp_df = pd.read_excel("data/DK_NFL_contest_data_2018.xlsx", sheet_name=week)
         temp_df["Week"] = week
         contest_df = pd.concat([contest_df, temp_df])
 
@@ -126,23 +126,6 @@ def main():
             add_NFL_stats(conn, "NFL_STATS_RUSH", team, i, "rush_att")
             add_NFL_stats(conn, "NFL_STATS_REC", team, i, "rec")
             add_NFL_stats(conn, "NFL_STATS_DEF", team, i, "tackles_solo")
-
-    '''
-            pass_data = stats_to_df(get_stats_URL(team_id = team, week_num = i, stat_type = "pass_att"));
-            pass_data.to_sql(name = 'NFL_STATS_PASS', con = conn, if_exists = 'append', index = False)
-
-            rush_data = stats_to_df(get_stats_URL(team_id = team, week_num = i, stat_type = "rush_att"));
-            rush_data.to_sql(name = 'NFL_STATS_RUSH', con = conn, if_exists = 'append', index = False)
-
-            rec_data = stats_to_df(get_stats_URL(team_id = team, week_num = i, stat_type = "rec"));
-            rec_data.to_sql(name = 'NFL_STATS_REC', con = conn, if_exists = 'append', index = False)
-
-            def_data = stats_to_df(get_stats_URL(team_id = team, week_num = i, stat_type = "tackles_solo"));
-            def_data.to_sql(name = 'NFL_STATS_DEF', con = conn, if_exists = 'append', index = False)
-    '''
-    ### Examine data
-    #playernames = conn.execute("SELECT player, team FROM NFL_STATS_DEF")
-    #print(playernames.fetchall()[0:100])
 
     conn.close()
 
