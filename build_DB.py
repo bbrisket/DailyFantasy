@@ -82,14 +82,6 @@ def stats_to_df(url):
             data = df
         else:
             data = data.append(df)
-    '''
-    try:
-        data
-    except NameError:
-        data = None
-    else:
-        data = data.dropna()
-    '''
 
     return data
 
@@ -102,30 +94,51 @@ def add_NFL_stats(con, table_name, team_id, week_num, stat_type):
     if data is not None:
         data.to_sql(name = table_name, con = con, if_exists = 'append', index = False)
 
+def add_salaries(con, table_name, year = 2018, week_num = 1):
+    page = requests.get("http://rotoguru1.com/cgi-bin/fyday.pl?week={}&year={}&game=dk&scsv=1".format(week_num, year))
+    soup = BeautifulSoup(page.content, 'lxml')
+    table = soup.find('table')
+
+    salaries_raw = table.find('pre').string
+    salaries_clean = salaries_raw.split("\n")
+
+    salaries = pd.DataFrame(columns = salaries_clean[0].split(";"), )
+    for row in salaries_clean[1:]:
+        record = row.split(";")
+        if record != [""]:
+            salaries.loc[len(salaries)] = record
+
+    salaries.to_sql(name = table_name, con = con, if_exists = 'append', index = False)
+    return salaries
+
 def main():
     ### Set up database
-    engine = db.create_engine('sqlite://data/dfs.db')
+    engine = db.create_engine('sqlite:///data/dfs.db')
     conn = engine.connect()
     clear_db_tables(conn, table_names)
 
     ### Get contest info
     contest_df = pd.DataFrame()
-    for i in range(1, 18):
-        week = "Week " + str(i)
+    for week in range(1, 18):
+        w = "Week " + str(week)
         temp_df = pd.read_excel("data/DK_NFL_contest_data_2018.xlsx", sheet_name=week)
-        temp_df["Week"] = week
+        temp_df["Week"] = w
         contest_df = pd.concat([contest_df, temp_df])
 
     contest_df = contest_df.dropna() #get rid of contests with missing data
     contest_df.to_sql(name = 'NFL_CONTESTS', con = conn, if_exists = 'replace', index = False)
 
     ### Get player info
-    for i in range(1, 18):
+    for week in range(1, 18):
         for team in team_names:
-            add_NFL_stats(conn, "NFL_STATS_PASS", team, i, "pass_att")
-            add_NFL_stats(conn, "NFL_STATS_RUSH", team, i, "rush_att")
-            add_NFL_stats(conn, "NFL_STATS_REC", team, i, "rec")
-            add_NFL_stats(conn, "NFL_STATS_DEF", team, i, "tackles_solo")
+            add_NFL_stats(conn, "NFL_STATS_PASS", team, week, "pass_att")
+            add_NFL_stats(conn, "NFL_STATS_RUSH", team, week, "rush_att")
+            add_NFL_stats(conn, "NFL_STATS_REC", team, week, "rec")
+            add_NFL_stats(conn, "NFL_STATS_DEF", team, week, "tackles_solo")
+
+    ### Get salary info
+    for week in range(1, 18):
+            add_salaries(conn, "NFL_SALARIES", year = 2018, week_num = week)
 
     conn.close()
 
