@@ -11,7 +11,7 @@ team_names = ['ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE',
          'OAK', 'PHI', 'PIT', 'SEA', 'SFO', 'TAM', 'TEN', 'WAS']
 
 table_names = ["NFL_CONTESTS", "NFL_STATS_PASS", "NFL_STATS_RUSH",
-               "NFL_STATS_REC", "NFL_STATS_DEF"]
+               "NFL_STATS_REC", "NFL_STATS_DEF", "NFL_SALARIES"]
 
 def get_stats_URL(
     year = 2018, team_id = "", opp_id = "", week_num = 1,
@@ -114,8 +114,8 @@ def add_salaries(con, table_name, year = 2018, week_num = 1):
 def main():
     ### Set up database
     engine = db.create_engine('sqlite:///data/dfs.db')
-    conn = engine.connect()
-    clear_db_tables(conn, table_names)
+    con = engine.connect()
+    clear_db_tables(con, table_names)
 
     ### Get contest info
     contest_df = pd.DataFrame()
@@ -126,21 +126,21 @@ def main():
         contest_df = pd.concat([contest_df, temp_df])
 
     contest_df = contest_df.dropna() #get rid of contests with missing data
-    contest_df.to_sql(name = 'NFL_CONTESTS', con = conn, if_exists = 'replace', index = False)
-
-    ### Get player info
-    for week in range(1, 18):
-        for team in team_names:
-            add_NFL_stats(conn, "NFL_STATS_PASS", team, week, "pass_att")
-            add_NFL_stats(conn, "NFL_STATS_RUSH", team, week, "rush_att")
-            add_NFL_stats(conn, "NFL_STATS_REC", team, week, "rec")
-            add_NFL_stats(conn, "NFL_STATS_DEF", team, week, "tackles_solo")
+    contest_df.to_sql(name = 'NFL_CONTESTS', con = cnn, if_exists = 'replace', index = False)
 
     ### Get salary info
     for week in range(1, 18):
-            add_salaries(conn, "NFL_SALARIES", year = 2018, week_num = week)
+            add_salaries(con, "NFL_SALARIES", year = 2018, week_num = week)
+            
+    ### Get player info
+    for week in range(1, 18):
+        for team in team_names:
+            add_NFL_stats(con, "NFL_STATS_PASS", team, week, "pass_att")
+            add_NFL_stats(con, "NFL_STATS_RUSH", team, week, "rush_att")
+            add_NFL_stats(con, "NFL_STATS_REC", team, week, "rec")
+            add_NFL_stats(con, "NFL_STATS_DEF", team, week, "tackles_solo")
 
-    conn.close()
+    con.close()
 
 
 if __name__ == '__main__':
