@@ -2,6 +2,7 @@
 A project to build optimal lineups for daily fantasy purposes.
 
 Data was pulled from rotogrinder (DraftKings contest stats), rotoguru (DraftKings salaries), and Pro Football Reference (NFL stats).
+
 ------
 [COMPLETE]
 * build_DB.py - Sets up an SQL database (dfs.db) for storing contest data and player data
