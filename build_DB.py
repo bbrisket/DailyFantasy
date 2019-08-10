@@ -102,11 +102,38 @@ def add_salaries(con, table_name, year = 2018, week_num = 1):
     salaries_raw = table.find('pre').string
     salaries_clean = salaries_raw.split("\n")
 
-    salaries = pd.DataFrame(columns = salaries_clean[0].split(";"), )
+    salary_columns = ['player', 'pos', 'team', 'week_num', 'year', 'score', 'salary']
+    salaries = pd.DataFrame(columns = salary_columns)
     for row in salaries_clean[1:]:
         record = row.split(";")
-        if record != [""]:
-            salaries.loc[len(salaries)] = record
+        if len(record) == 10: # Check that each row is properly formatted
+            new_record = []
+            fullname = record[3]
+            if "," in fullname: # Swap naming format to `firstname lastname`
+                name = fullname.split(", ")
+                fullname = (name[1] + " " + name[0]).replace("'", "\\'")
+
+            position = record[4]
+            if position == 'Def':
+                position = 'DEF'
+                fullname = record[5].upper()
+                if fullname == 'JAC':
+                    fullname = 'JAX'
+
+            team = record[5].upper()
+            if team == 'JAC':
+                team = 'JAX'
+
+            new_record.append(fullname)  # Player name
+            new_record.append(position) # Position
+            new_record.append(team) # Team
+            new_record.append(record[0]) # Week number
+            new_record.append(record[1]) # Year
+            new_record.append(record[8]) # Fantasy score
+            new_record.append(record[9]) # DraftKings salary
+
+            salaries.loc[len(salaries)] = new_record
+            print(new_record)
 
     salaries.to_sql(name = table_name, con = con, if_exists = 'append', index = False)
     return salaries
@@ -121,17 +148,17 @@ def main():
     contest_df = pd.DataFrame()
     for week in range(1, 18):
         w = "Week " + str(week)
-        temp_df = pd.read_excel("data/DK_NFL_contest_data_2018.xlsx", sheet_name=week)
-        temp_df["Week"] = w
+        temp_df = pd.read_excel("data/DK_NFL_contest_data_2018.xlsx", sheet_name=w)
+        temp_df["Week"] = week
         contest_df = pd.concat([contest_df, temp_df])
 
     contest_df = contest_df.dropna() #get rid of contests with missing data
-    contest_df.to_sql(name = 'NFL_CONTESTS', con = cnn, if_exists = 'replace', index = False)
+    contest_df.to_sql(name = 'NFL_CONTESTS', con = con, if_exists = 'replace', index = False)
 
     ### Get salary info
     for week in range(1, 18):
             add_salaries(con, "NFL_SALARIES", year = 2018, week_num = week)
-            
+
     ### Get player info
     for week in range(1, 18):
         for team in team_names:
