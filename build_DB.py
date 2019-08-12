@@ -96,41 +96,49 @@ def add_NFL_stats(con, table_name, team_id, week_num, stat_type):
 
 def add_salaries(con, table_name, year = 2018, week_num = 1):
     page = requests.get("http://rotoguru1.com/cgi-bin/fyday.pl?week={}&year={}&game=dk&scsv=1".format(week_num, year))
-    soup = BeautifulSoup(page.content, 'lxml')
-    table = soup.find('table')
+    soup = BeautifulSoup(page.content, "lxml")
+    table = soup.find("table")
 
-    salaries_raw = table.find('pre').string
+    salaries_raw = table.find("pre").string
     salaries_clean = salaries_raw.split("\n")
 
-    salary_columns = ['player', 'pos', 'team', 'week_num', 'year', 'score', 'salary']
+    salary_columns = ["player", "pos", "team", "game_location", "opp",
+                      "week_num", "year", "score", "salary"]
     salaries = pd.DataFrame(columns = salary_columns)
     for row in salaries_clean[1:]:
         record = row.split(";")
-        if len(record) == 10: # Check that each row is properly formatted
-            new_record = []
+        if len(record) == 10: #record != [""]:
             fullname = record[3]
-            if "," in fullname: # Swap naming format to `firstname lastname`
+            if "," in fullname:
                 name = fullname.split(", ")
                 fullname = (name[1] + " " + name[0]).replace("'", "\\'")
 
-            position = record[4]
-            if position == 'Def':
-                position = 'DEF'
+            position = record[4].upper()
+            if position == "DEF":
                 fullname = record[5].upper()
-                if fullname == 'JAC':
-                    fullname = 'JAX'
+                if fullname == "JAC":
+                    fullname = "JAX"
 
             team = record[5].upper()
-            if team == 'JAC':
-                team = 'JAX'
+            if team == "JAC":
+                team = "JAX"
 
-            new_record.append(fullname)  # Player name
-            new_record.append(position) # Position
-            new_record.append(team) # Team
-            new_record.append(record[0]) # Week number
-            new_record.append(record[1]) # Year
-            new_record.append(record[8]) # Fantasy score
-            new_record.append(record[9]) # DraftKings salary
+            game_location = "@" if record[6] == "h" else ""
+
+            opp = record[7].upper()
+            if opp == "JAC":
+                opp = "JAX"
+
+            new_record = []
+            new_record.append(fullname)         # Player name
+            new_record.append(position)         # Position
+            new_record.append(team)             # Team
+            new_record.append(game_location)    # Game location
+            new_record.append(opp)              # Opponent
+            new_record.append(record[0])        # Week number
+            new_record.append(record[1])        # Year
+            new_record.append(record[8])        # Fantasy score
+            new_record.append(record[9])        # DraftKings salary
 
             salaries.loc[len(salaries)] = new_record
             print(new_record)
