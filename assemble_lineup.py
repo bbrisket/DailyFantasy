@@ -1,87 +1,84 @@
 import pandas as pd
+import numpy as np
+import sqlalchemy as db
+import sqlite3
+import cvxpy as cp
 
-def build_lineup(player_info, position_dict, cap):
-    '''
-    player_info: Pandas DataFrame containing player name, position, value, salary
-    positionDict: Dictionary with keys representing each position needed and
-        values representing the number of players from those positions required
-    cap: Integer representing salary cap
+def get_selection(df, selection):
+    """
+    Produce a Pandas DataFrame describing the selected lineup.
+    """
 
-    build_lineup() returns a list of player names, representing the lineup of
-    maximum value that fulfills the position requirement and stays below the
-    salary cap.
+    players = []
+    pos = []
+    scores = []
+    salaries = []
+    for row_idx in range(len(selection)):
+        if selection[row_idx]:
+            players.append(df.iloc[row_idx]["player"])
+            pos.append(df.iloc[row_idx]["pos"])
+            scores.append(df.iloc[row_idx]["score"])
+            salaries.append(df.iloc[row_idx]["salary"])
+    return pd.DataFrame(list(zip(players, pos, scores, salaries)))
 
-    Current algorithm: Create basic roster consisting of players requiring
-    minimum salary. Then gradually replace least efficient player within the
-    lineup with the most efficient available player within the same position.
-    '''
-    lineup = []
-    net_cost = 0
-    net_value = 0
+def solve_ip(df):
+    """
+    Solves integer programming problem subjected to certain lineup constraints.
+    """
+    slimmed_df = df[["player", "team", "pos", "score", "salary"]][(df["salary"] != "") & (df["score"] != "")]
+    slimmed_df["score"] = slimmed_df["score"].str.strip().astype(float)
+    slimmed_df["salary"] = slimmed_df["salary"].str.strip().astype(float)
 
-    found_position_dict = {}
-    cheap_player_info = player_info.sort_values("Salary") #sort by cheapest player
+    selection = cp.Variable(shape = len(slimmed_df), boolean = True)
 
-    for i in range(len(cheap_player_info)): #build basic lineup
-        pos = cheap_player_info.iloc[i]["Position"]
-        salary = cheap_player_info.iloc[i]["Salary"]
-        value = cheap_player_info.iloc[i]["Value"]
-        name = cheap_player_info.index[i]
-        if pos in position_dict: #assuming values of positionDict are POSITIVE
-            if pos not in found_position_dict:
-                found_position_dict[pos] = 1
-                net_cost += salary
-                net_value += value
-                lineup.append(name)
-            elif found_position_dict[pos] < position_dict[pos]:
-                found_position_dict[pos] += 1
-                net_cost += salary
-                net_value += value
-                lineup.append(name)
+    ### Salary constraints
+    salary_constraint = slimmed_df["salary"].values * selection <= 50000
 
-    if net_cost > cap: #sanity check
-        print("Error: total cost of cheapest possible lineup exceeds salary cap.")
-        return None
+    ### Positional constraints
+    lineup_size_constraint = cp.sum(selection) == 9
 
-    player_info["Efficiency"] = pd.to_numeric(player_info["Value"])/pd.to_numeric(player_info["Salary"])
-    efficient_player_info = player_info.sort_values("Efficiency", ascending=False)
-    lineup.sort(key = lambda x: player_info.loc[x]["Efficiency"]) #sort by increasing efficiency
-    print(efficient_player_info)
+    num_qb = cp.sum((slimmed_df["pos"] == "QB").values * selection)
+    num_rb = cp.sum((slimmed_df["pos"] == "RB").values * selection)
+    num_wr = cp.sum((slimmed_df["pos"] == "WR").values * selection)
+    num_te = cp.sum((slimmed_df["pos"] == "TE").values * selection)
+    num_def = cp.sum((slimmed_df["pos"] == "DEF").values * selection)
 
-    for i in range(len(lineup)): #replace least efficient players first
-        pos = player_info.loc[lineup[i]]["Position"]
-        salary = player_info.loc[lineup[i]]["Salary"]
-        value = player_info.loc[lineup[i]]["Value"]
-        pos_pool = player_info[player_info["Position"] == pos].sort_values("Efficiency", ascending=False)
-        for j in range(len(pos_pool)):
-            name = pos_pool.index[j]
-            new_cost = net_cost - salary + playerInfo.loc[name]["Salary"]
-            new_value = net_value - value + playerInfo.loc[name]["Value"]
-            if name not in lineup and new_value > net_value and new_cost <= cap: #update player
-                lineup[i] = name
-                net_cost = new_cost
-                net_value = new_value
+    num_qb_constraint = num_qb == 1
+    min_rb_constraint = num_rb >= 2
+    max_rb_constraint = num_rb <= 3
+    min_wr_constraint = num_wr >= 3
+    max_wr_constraint = num_wr <= 4
+    min_te_constraint = num_te >= 1
+    max_te_constraint = num_te <= 2
+    num_def_constraint = num_def == 1
 
-    return lineup
+    ### Define multi-integer problem
+    objective = cp.Maximize(slimmed_df["score"].values * selection)
+    problem = cp.Problem(objective, [salary_constraint,
+                                     lineup_size_constraint,
+                                     num_qb_constraint,
+                                     min_rb_constraint,
+                                     max_rb_constraint,
+                                     min_wr_constraint,
+                                     max_wr_constraint,
+                                     min_te_constraint,
+                                     max_te_constraint,
+                                     num_def_constraint])
+    problem.solve()
 
-def describe_lineup(player_info, lineup):
-    total_value = 0
-    total_salary = 0
-    for name in lineup:
-        total_value += int(player_info.loc[name]["Value"])
-        total_salary += int(player_info.loc[name]["Salary"])
-    print("This lineup has value index {} and requires a salary of ${}.".format(total_value, total_salary))
+    ### Output the optimal lineup
+    rounded_selection = np.rint(selection.value)
+    return get_selection(slimmed_df, rounded_selection)
 
 def main():
-    player_info = pd.read_csv("playerinfo.csv")
-    player_info.set_index("Name", inplace=True)
+    engine = db.create_engine("sqlite:///data/dfs.db")
+    con = engine.connect()
+    data = pd.read_sql_query("SELECT * FROM NFL_SALARIES \
+                              WHERE week_num = 1", con)
+    con.close()
 
-    cap = 20000
-    position_dict = {"QB":1, "TE":1, "WR":2} #positional requirements
-    lineup = build_lineup(player_info, position_dict, cap)
+    lineup_df = solve_ip(data)
+    print(lineup_df)
 
-    print(lineup, "\n")
-    describe_lineup(player_info, lineup)
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
