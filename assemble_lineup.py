@@ -60,7 +60,24 @@ def solve_classic_contest(df, num_lineups):
         ### Add result to list
         rounded_selection = np.rint(selection.value)
         lineups.append(rounded_selection)
-    return lineups
+
+    result = []
+    for lineup in lineups:
+        players = []
+        pos = []
+        teams = []
+        scores = []
+        salaries = []
+        for row_idx in range(len(lineup)):
+            if lineup[row_idx]:
+                players.append(df.iloc[row_idx]["player"])
+                pos.append(df.iloc[row_idx]["pos"])
+                teams.append(df.iloc[row_idx]["team"])
+                scores.append(df.iloc[row_idx]["score"])
+                salaries.append(df.iloc[row_idx]["salary"])
+        result.append(pd.DataFrame(list(zip(players, pos, teams, scores, salaries))))
+
+    return result
 
 def solve_showdown_contest(df, num_lineups):
     """
@@ -156,7 +173,7 @@ def main():
                               WHERE year = 2019 AND week_num = 1", con)
     con.close()
 
-    solve_ip(data, contest_type = "showdown", num_lineups = 3, valid_teams = ["TAM", "CAR"])
+    solve_ip(data, contest_type = "classic", num_lineups = 3)
 
 if __name__ == "__main__":
     main()
