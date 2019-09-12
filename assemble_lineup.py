@@ -10,10 +10,11 @@ team_names = ["ARI", "ATL", "BAL", "BUF", "CAR", "CHI", "CIN", "CLE", #PFR abbre
               "OAK", "PHI", "PIT", "SEA", "SFO", "TAM", "TEN", "WAS"] + \
              ["TB"] #DraftKings abbreviations
 
-def solve_classic_contest(df, num_lineups, max_overlap = 6):
+def solve_classic_contest(df, num_lineups, max_overlap):
     """
     Compute the best possible lineups for entering a DraftKings Classic NFL contest.
     """
+    max_overlap = min(max_overlap, 9) # Defensive programming
     lineups = []
     for i in range(num_lineups):
         selection = cp.Variable(shape = len(df), boolean = True)
@@ -80,10 +81,11 @@ def solve_classic_contest(df, num_lineups, max_overlap = 6):
 
     return result
 
-def solve_showdown_contest(df, num_lineups, max_overlap = 4):
+def solve_showdown_contest(df, num_lineups, max_overlap):
     """
     Compute the best possible lineups for entering a DraftKings Showdown NFL contest.
     """
+    max_overlap = min(max_overlap, 6) # Defensive programming
     lineups = []
     for i in range(num_lineups):
         captain = cp.Variable(shape = len(df), boolean = True)
@@ -143,7 +145,7 @@ def solve_showdown_contest(df, num_lineups, max_overlap = 4):
 
     return result
 
-def solve_ip(df, contest_type, num_lineups, valid_teams = team_names):
+def solve_ip(df, contest_type, num_lineups, valid_teams = team_names, max_overlap = 4):
     """
     Solve the integer programming problem of maximizing projected fantasy points
     subject to multiple lineup constraints.
@@ -159,9 +161,9 @@ def solve_ip(df, contest_type, num_lineups, valid_teams = team_names):
 
     lineups = []
     if contest_type == "classic":
-        lineups = solve_classic_contest(slimmed_df, num_lineups)
+        lineups = solve_classic_contest(slimmed_df, num_lineups, max_overlap)
     elif contest_type == "showdown":
-        lineups = solve_showdown_contest(slimmed_df, num_lineups)
+        lineups = solve_showdown_contest(slimmed_df, num_lineups, max_overlap)
 
     for lineup in lineups:
         print(lineup)
@@ -175,7 +177,6 @@ def main():
         data.columns = ["pos", "name_id", "player", "id", "rost_pos", "salary",
                         "game_time", "team", "score"]
     else:
-
         engine = db.create_engine("sqlite:///data/dfs.db")
         con = engine.connect()
         data = pd.read_sql_query("SELECT * \
@@ -183,7 +184,7 @@ def main():
                                   WHERE year = 2019 AND week_num = 1", con)
         con.close()
 
-    solve_ip(data, contest_type = "showdown", num_lineups = 1)
+    solve_ip(data, contest_type = "showdown", num_lineups = 1, max_overlap = 4)
 
 if __name__ == "__main__":
     main()
