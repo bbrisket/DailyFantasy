@@ -3,17 +3,26 @@ A project to build optimal lineups for daily fantasy purposes.
 
 Data was pulled from rotogrinder (DraftKings contest stats), rotoguru (DraftKings salaries), and Pro Football Reference (NFL stats).
 
+## Current usage
+Select a DraftKings upcoming contest (on the website, not the mobile app) and download the accompanying .csv file. Open assemble_lineup.py, navigate to the `main()` function and set `import_csv_flag` to `True`. Then set `csv_path` to the path where your downloded .csv file was saved. In the last line of the main() function, specify the contest type ("classic" or "showdown") and pick the number of lineups to output. The variance across generated lineups can be changed by altering the max_overlap argument.
+
+Note: The DraftKings .csv file contains a column named `AvgPtsPerGame` that is currently the basis for our code's projections. In the event that you have different projected scores for specific players, edit the values directly within the DraftKings .csv file. 
+
+
+
+
+## Files
 ------
 [COMPLETE]
 * build_DB.py - Sets up a SQL database (dfs.db) for storing contest data and player data
 * build_csv.py - Creates .csv files for each table found within dfs.db
 
 [FUNCTIONAL/IN PROGRESS]
+* assemble_lineup.py - Builds the optimal lineup using a CVXPY multi-variable programmer
 * contest_analysis.ipynb - Contains visualizations and explorations of contest data
 ------
 [NONFUNCTIONAL/IN PROGRESS]
-* assemble_lineup.py - Builds the optimal lineup based on stats scraped from Pro Football Reference
-* build_LOL.py - Analogue for esports; currently lacks a comprehensive source of stats
+* build_LOL.py - Analogue for esports; currently lacks a comprehensive source for player performance statistics
 
 ------
 [DATA]

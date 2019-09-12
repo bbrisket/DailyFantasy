@@ -4,12 +4,13 @@ import sqlalchemy as db
 import sqlite3
 import cvxpy as cp
 
-team_names = ["ARI", "ATL", "BAL", "BUF", "CAR", "CHI", "CIN", "CLE",
+team_names = ["ARI", "ATL", "BAL", "BUF", "CAR", "CHI", "CIN", "CLE", #PFR abbreviations
               "DAL", "DEN", "DET", "GNB", "HOU", "IND", "JAX", "KAN",
               "LAC", "LAR", "MIA", "MIN", "NOR", "NWE", "NGY", "NYJ",
-              "OAK", "PHI", "PIT", "SEA", "SFO", "TAM", "TEN", "WAS"]
+              "OAK", "PHI", "PIT", "SEA", "SFO", "TAM", "TEN", "WAS"] + \
+             ["TB"] #DraftKings abbreviations
 
-def solve_classic_contest(df, num_lineups):
+def solve_classic_contest(df, num_lineups, max_overlap = 6):
     """
     Compute the best possible lineups for entering a DraftKings Classic NFL contest.
     """
@@ -41,7 +42,7 @@ def solve_classic_contest(df, num_lineups):
         ### Differentiate lineups
         lineup_constraints = []
         for lineup in lineups:
-            lineup_constraints.append(cp.sum(lineup * selection) <= 7) # max num. players that can match between lineups
+            lineup_constraints.append(cp.sum(lineup * selection) <= max_overlap) # max num. players that can match between lineups
 
         ### Define multi-integer problem
         objective = cp.Maximize(df["score"].values * selection)
@@ -79,7 +80,7 @@ def solve_classic_contest(df, num_lineups):
 
     return result
 
-def solve_showdown_contest(df, num_lineups):
+def solve_showdown_contest(df, num_lineups, max_overlap = 4):
     """
     Compute the best possible lineups for entering a DraftKings Showdown NFL contest.
     """
@@ -101,7 +102,7 @@ def solve_showdown_contest(df, num_lineups):
         ### Differentiate lineups
         lineup_constraints = []
         for lineup in lineups:
-            lineup_constraints.append(cp.sum(lineup * (selection)) <= 4) # max num. players that can match between lineups
+            lineup_constraints.append(cp.sum(lineup * (selection)) <= max_overlap) # max num. players that can match between lineups
 
         ### Define multi-integer problem
         objective = cp.Maximize(df["score"].values * (cp.multiply(1.5, captain) + selection)) #cp.multiply(1.5, captain) +
@@ -151,9 +152,9 @@ def solve_ip(df, contest_type, num_lineups, valid_teams = team_names):
     num_lineups (int): number of lineups to return
     valid_teams (str list): list of teams eligible for the entered contest
     """
-    slimmed_df = df[["player", "pos", "team", "score", "salary"]][(df["salary"] != "") & (df["score"] != "")]
-    slimmed_df["score"] = slimmed_df["score"].str.strip().astype(float)
-    slimmed_df["salary"] = slimmed_df["salary"].str.strip().astype(float)
+    slimmed_df = df[["player", "pos", "team", "score", "salary"]].replace("", np.nan).dropna()
+    slimmed_df["score"] = slimmed_df["score"].astype(str).str.strip().astype(float)
+    slimmed_df["salary"] = slimmed_df["salary"].astype(str).str.strip().astype(float)
     slimmed_df = slimmed_df[slimmed_df["team"].isin(valid_teams)]
 
     lineups = []
@@ -166,14 +167,23 @@ def solve_ip(df, contest_type, num_lineups, valid_teams = team_names):
         print(lineup)
 
 def main():
-    engine = db.create_engine("sqlite:///data/dfs.db")
-    con = engine.connect()
-    data = pd.read_sql_query("SELECT * \
-                              FROM NFL_SALARIES \
-                              WHERE year = 2019 AND week_num = 1", con)
-    con.close()
+    import_csv_flag = True
+    if import_csv_flag:
+        csv_path = "DKSalaries.csv"
+        data = pd.read_csv(csv_path)
+        data = data[data["Roster Position"] != "CPT"]
+        data.columns = ["pos", "name_id", "player", "id", "rost_pos", "salary",
+                        "game_time", "team", "score"]
+    else:
 
-    solve_ip(data, contest_type = "classic", num_lineups = 3)
+        engine = db.create_engine("sqlite:///data/dfs.db")
+        con = engine.connect()
+        data = pd.read_sql_query("SELECT * \
+                                  FROM NFL_SALARIES \
+                                  WHERE year = 2019 AND week_num = 1", con)
+        con.close()
+
+    solve_ip(data, contest_type = "showdown", num_lineups = 1)
 
 if __name__ == "__main__":
     main()
