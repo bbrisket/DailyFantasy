@@ -8,7 +8,7 @@ team_names = ["ARI", "ATL", "BAL", "BUF", "CAR", "CHI", "CIN", "CLE", #PFR abbre
               "DAL", "DEN", "DET", "GNB", "HOU", "IND", "JAX", "KAN",
               "LAC", "LAR", "MIA", "MIN", "NOR", "NWE", "NGY", "NYJ",
               "OAK", "PHI", "PIT", "SEA", "SFO", "TAM", "TEN", "WAS"] + \
-             ["TB"] #DraftKings abbreviations
+             ["GB", "KC", "NE", "NO", "NYG", "SF", "TB"] #DraftKings abbreviations
 
 def solve_classic_contest(df, num_lineups, max_overlap):
     """
@@ -16,6 +16,7 @@ def solve_classic_contest(df, num_lineups, max_overlap):
     """
     max_overlap = min(max_overlap, 9) # Defensive programming
     lineups = []
+
     for i in range(num_lineups):
         selection = cp.Variable(shape = len(df), boolean = True)
 
@@ -158,7 +159,7 @@ def solve_ip(df, contest_type, num_lineups, valid_teams = team_names, max_overla
     slimmed_df["score"] = slimmed_df["score"].astype(str).str.strip().astype(float)
     slimmed_df["salary"] = slimmed_df["salary"].astype(str).str.strip().astype(float)
     slimmed_df = slimmed_df[slimmed_df["team"].isin(valid_teams)]
-
+    slimmed_df.replace({"DST":"DEF"}, inplace=True)
     lineups = []
     if contest_type == "classic":
         lineups = solve_classic_contest(slimmed_df, num_lineups, max_overlap)
@@ -184,7 +185,7 @@ def main():
                                   WHERE year = 2019 AND week_num = 1", con)
         con.close()
 
-    solve_ip(data, contest_type = "showdown", num_lineups = 1, max_overlap = 4)
+    solve_ip(data, contest_type = "classic", num_lineups = 5, max_overlap = 4)
 
 if __name__ == "__main__":
     main()
